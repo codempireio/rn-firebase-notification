@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { Platform, StyleSheet, Text, View } from "react-native";
+import { Platform, StyleSheet, TextInput, View, Button } from "react-native";
 import firebase from "react-native-firebase";
 
 const instructions = Platform.select({
@@ -10,6 +10,12 @@ const instructions = Platform.select({
 });
 
 export default class App extends Component {
+  state = {
+    isSignedIs: false,
+    phoneNumber: "",
+    verificationId: null
+  };
+
   async componentDidMount() {
     const NotificationOpen = await firebase
       .notifications()
@@ -75,6 +81,18 @@ export default class App extends Component {
           .notifications()
           .removeDeliveredNotification(Notification.notificationId);
       });
+
+    const httpsCallable = firebase.functions().httpsCallable("helloWorld");
+    const fcmToken = await firebase.messaging().getToken();
+    console.log(fcmToken);
+    httpsCallable({ token: fcmToken })
+      .then(data => {
+        debugger;
+        console.log(data); // hello world
+      })
+      .catch(httpsError => {
+        debugger;
+      });
   }
   componentWillUnmount() {
     this.notificationDisplayedListener();
@@ -84,12 +102,28 @@ export default class App extends Component {
   render() {
     return (
       <View style={styles.container}>
-        <Text style={styles.welcome}>Hello to React Native!</Text>
-        <Text style={styles.instructions}>To get started, edit App.js</Text>
-        <Text style={styles.instructions}>{instructions}</Text>
+        <TextInput
+          style={{
+            height: 40,
+            width: 200,
+            borderColor: "gray",
+            borderWidth: 1
+          }}
+          onChangeText={number => this.setState({ phoneNumber: number })}
+          value={this.state.phoneNumber}
+          editable={true}
+        />
+        <Button onPress={this._authByPhone} title="Sign In" color="#841584" />
       </View>
     );
   }
+  _authByPhone = async () => {
+    const { phoneNumber: number } = this.state;
+    const result = await firebase.auth().signInWithPhoneNumber(number);
+    const code = "777777";
+    const user = await result.confirm(code);
+    console.log(user);
+  };
 }
 
 const styles = StyleSheet.create({

@@ -10,6 +10,8 @@ import com.facebook.react.shell.MainReactPackage;
 import com.facebook.soloader.SoLoader;
 import io.invertase.firebase.messaging.RNFirebaseMessagingPackage; // firebase-message
 import io.invertase.firebase.notifications.RNFirebaseNotificationsPackage; // firebase-notification
+import io.invertase.firebase.auth.RNFirebaseAuthPackage; // firebase - auth
+import io.invertase.firebase.functions.RNFirebaseFunctionsPackage; // firebase cloud function
 
 import java.util.Arrays;
 import java.util.List;
@@ -27,8 +29,10 @@ public class MainApplication extends Application implements ReactApplication {
       return Arrays.<ReactPackage>asList(
           new MainReactPackage(),
           new RNFirebasePackage(),
-          new RNFirebaseMessagingPackage(),
-          new RNFirebaseNotificationsPackage()
+          new RNFirebaseMessagingPackage(), // firebase-message
+          new RNFirebaseNotificationsPackage(), // firebase-notification
+          new RNFirebaseAuthPackage(), // firebase - auth
+          new RNFirebaseFunctionsPackage() // firebase cloud function
       );
     }
 
