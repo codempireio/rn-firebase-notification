@@ -1,11 +1,18 @@
 import { createStackNavigator, createAppContainer } from "react-navigation";
-import { AUTH, USER } from './screenCases'
-import Auth from '../AuthScreen/AuthScreen'
+import { AUTH, USER } from "./screenCases";
+import { AuthScreen } from "../AuthScreen";
+import { User } from "../User";
 
 const Navigation = createStackNavigator(
   {
     [AUTH]: {
-      screen: Auth,
+      screen: AuthScreen,
+      navigationOptions: {
+        header: null
+      }
+    },
+    [USER]: {
+      screen: User,
       navigationOptions: {
         header: null
       }
@@ -16,4 +23,4 @@ const Navigation = createStackNavigator(
   }
 );
 
-export default createAppContainer(Navigation)
+export const AppContainer = createAppContainer(Navigation);

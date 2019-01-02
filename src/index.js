@@ -1,1 +1,1 @@
-export { default as App } from "./components/App";
+export { AppContainer } from "./scenes/Navigation";

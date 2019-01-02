@@ -1,4 +1,5 @@
 import * as React from "react";
+import firebase from "react-native-firebase";
 import {
   View,
   StyleSheet,
@@ -6,9 +7,9 @@ import {
   TouchableHighlight,
   Text
 } from "react-native";
-import firebase from "react-native-firebase";
+import { USER } from "../Navigation/screenCases";
 
-export default class AuthScreen extends React.Component {
+export class AuthScreen extends React.Component {
   constructor(props) {
     super(props);
     this.unsubscribe = null;
@@ -86,11 +87,8 @@ export default class AuthScreen extends React.Component {
     this.unsubscribe = firebase.auth().onAuthStateChanged(user => {
       if (user) {
         this.setState({ user: user.toJSON() });
-        console.log("user signed in");
-        // this.props.navigation.navigate(USER, )
+        this.props.navigation.navigate(USER, { ...user.toJSON() });
       } else {
-        // User has been signed out, reset the state
-        console.log("user not auth");
         this.setState({
           user: null,
           phoneNumber: ""
@@ -104,7 +102,7 @@ export default class AuthScreen extends React.Component {
     this.notificationListener();
     this.notificationOpenedListener();
   }
-  
+
   render() {
     return (
       <View style={styles.container}>
@@ -126,12 +124,18 @@ export default class AuthScreen extends React.Component {
       const code = "777777";
       const user = await result.confirm(code);
       console.log(user.toJSON());
+      this._createNotification(user.toJSON().phoneNumber);
+    } catch (e) {
+      console.log(e);
+    }
+  };
+  _createNotification = async phoneNumber => {
+    try {
       const httpsCallable = firebase.functions().httpsCallable("helloWorld");
       const fcmToken = await firebase.messaging().getToken();
-      console.log(fcmToken);
       await httpsCallable({
         token: fcmToken,
-        user: this.state.user.phoneNumber
+        user: phoneNumber
       });
     } catch (e) {
       console.log(e);
