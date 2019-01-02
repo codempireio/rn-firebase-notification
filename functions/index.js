@@ -7,7 +7,7 @@ exports.helloWorld = functions.https.onCall(data => {
   var payload = {
     notification: {
       title: "test",
-      body: "hello"
+      body: `User ${data.user} has signed in`
     }
   };
   console.log(data.token)

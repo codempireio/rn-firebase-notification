@@ -10,12 +10,14 @@ const instructions = Platform.select({
 });
 
 export default class App extends Component {
-  state = {
-    isSignedIs: false,
-    phoneNumber: "",
-    verificationId: null
-  };
-
+  constructor() {
+    super();
+    this.unsubscribe = null;
+    this.state = {
+      user: null,
+      phoneNumber: "",
+    };
+  }
   async componentDidMount() {
     const NotificationOpen = await firebase
       .notifications()
@@ -82,22 +84,25 @@ export default class App extends Component {
           .removeDeliveredNotification(Notification.notificationId);
       });
 
-    const httpsCallable = firebase.functions().httpsCallable("helloWorld");
-    const fcmToken = await firebase.messaging().getToken();
-    console.log(fcmToken);
-    httpsCallable({ token: fcmToken })
-      .then(data => {
-        debugger;
-        console.log(data); // hello world
-      })
-      .catch(httpsError => {
-        debugger;
-      });
+    // User listener
+    this.unsubscribe = firebase.auth().onAuthStateChanged(user => {
+      if (user) {
+        this.setState({ user: user.toJSON() });
+        console.log(this.state.user, 'from CDM');
+      } else {
+        // User has been signed out, reset the state
+        this.setState({
+          user: null,
+          phoneNumber: "",
+        });
+      }
+    });
   }
   componentWillUnmount() {
     this.notificationDisplayedListener();
     this.notificationListener();
     this.notificationOpenedListener();
+    if (this.unsubscribe) this.unsubscribe();
   }
   render() {
     return (
@@ -114,15 +119,31 @@ export default class App extends Component {
           editable={true}
         />
         <Button onPress={this._authByPhone} title="Sign In" color="#841584" />
+        <Button onPress={this._signOut} title="Sign Out" color='red'/>
       </View>
     );
   }
+  _signOut = () => {
+    firebase.auth().signOut();
+    console.log(this.state.user);
+  };
   _authByPhone = async () => {
     const { phoneNumber: number } = this.state;
     const result = await firebase.auth().signInWithPhoneNumber(number);
     const code = "777777";
     const user = await result.confirm(code);
-    console.log(user);
+    console.log(user.toJSON());
+    const httpsCallable = firebase.functions().httpsCallable("helloWorld");
+    const fcmToken = await firebase.messaging().getToken();
+    console.log(fcmToken);
+    httpsCallable({ token: fcmToken, user: this.state.user.phoneNumber })
+      .then(data => {
+        debugger;
+        console.log(data); // hello world
+      })
+      .catch(httpsError => {
+        debugger;
+      });
   };
 }
 
