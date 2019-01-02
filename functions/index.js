@@ -1,7 +1,7 @@
 var functions = require("firebase-functions");
 var admin = require("firebase-admin");
 
-admin.initializeApp(functions.config().firebase); // not try
+admin.initializeApp(functions.config().firebase); 
 
 exports.helloWorld = functions.https.onCall(data => {
   var payload = {
