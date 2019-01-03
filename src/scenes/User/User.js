@@ -4,9 +4,6 @@ import firebase from "react-native-firebase";
 import * as API from '../../services/api';
 
 export class User extends React.Component {
-  componentDidMount() {
-    this.getUsers();
-  }
   render() {
     return (
       <View style={styles.container}>
@@ -31,10 +28,6 @@ export class User extends React.Component {
       </View>
     );
   }
-  getUsers = async () => {
-    const data = await API.getUsers();
-    console.log(data);
-  };
   _signOut = () => {
     firebase.auth().signOut();
     this.props.navigation.goBack();

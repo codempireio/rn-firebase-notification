@@ -9,24 +9,23 @@ import {
 import { USER } from "../Navigation/screenCases";
 import * as API from "../../services/api";
 import { AuthAPI } from "../../services/auth.api";
-import { NotificationApi } from "../../services/notification.api";
+import { notificationApi } from "../../services/notification.api";
 
 export class AuthScreen extends React.Component {
-  constructor(props) {
-    super(props);
-    this.unsubscribe = null;
-    this.state = {
-      phoneNumber: "",
-      isSend: false,
-      confirmCode: ""
-    };
-  }
+  unsubscribe = null;
+  state = {
+    phoneNumber: "",
+    isSend: false,
+    confirmCode: ""
+  };
   async componentDidMount() {
     this.notificationListener = this.startNotificationsListener();
     this.unsubscribe = AuthAPI.userAuthListener(this._checkUser);
   }
   componentWillUnmount() {
-    if (this.unsubscribe) this.unsubscribe();
+    if (this.unsubscribe) {
+      this.unsubscribe();
+    }
     this.notificationDisplayedListener();
     this.notificationListener();
     this.notificationOpenedListener();
@@ -69,9 +68,7 @@ export class AuthScreen extends React.Component {
   onConfirmCodeChange = confirmCode => {
     this.setState({ confirmCode });
   };
-  // TODO: rename func, done
   _checkUser = user => {
-    // TODO: get user in JSON format, done
     if (user) {
       const parsedUser = user.toJSON();
       this.props.navigation.navigate(USER, { ...parsedUser });
@@ -84,24 +81,22 @@ export class AuthScreen extends React.Component {
     }
   };
   startNotificationsListener = async () => {
-    await NotificationApi.notificationListener();
+    await notificationApi.notificationListener();
   };
   _inputPhoneNumber = async () => {
     try {
       const { phoneNumber: number } = this.state;
-      AuthAPI.signInByPhone(number);
+      await AuthAPI.signInByPhone(number);
       this.setState({
         isSend: true
       });
     } catch (e) {
-      console.log(e);
+      console.error(e);
     }
   };
   _userConfirm = async () => {
     const { confirmCode } = this.state;
-    // TODO: get only phoneNumber instead of whole user object, done!
     const phoneNumber = await AuthAPI.userConfirm(confirmCode);
-    console.log(phoneNumber, "number");
     this._createNotification(phoneNumber);
     this.setState({
       phoneNumber: "",
@@ -110,14 +105,12 @@ export class AuthScreen extends React.Component {
     });
   };
 
-  // TODO: move to service, done
   _createNotification = async phoneNumber => {
     try {
       const data = { user: phoneNumber };
-      const functionName = "helloWorld";
-      await API.callCloudFunctionWithData(functionName, data);
+      await API.callCreateNotificationFunction(data);
     } catch (e) {
-      console.log(e);
+      console.error(e);
     }
   };
 }

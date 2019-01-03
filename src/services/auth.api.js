@@ -5,18 +5,18 @@ class Auth {
   _userPhone = null;
   signInByPhone = async number => {
     try {
-      _userPhone = await firebase.auth().signInWithPhoneNumber(number);
+      this._userPhone = await firebase.auth().signInWithPhoneNumber(number);
     } catch (e) {
-      console.log(e);
+      console.error(e);
     }
   };
   userConfirm = async confirmCode => {
     try {
-      const user = await _userPhone.confirm(confirmCode);
+      const user = await this._userPhone.confirm(confirmCode);
       const phoneNumber = user.toJSON().phoneNumber;
       return phoneNumber;
     } catch (e) {
-      console.log(e);
+      console.error(e);
     }
   };
   userAuthListener = (successCallback) => {
