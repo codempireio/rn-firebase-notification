@@ -1,5 +1,4 @@
 import * as React from "react";
-import firebase from "react-native-firebase";
 import {
   View,
   StyleSheet,
@@ -8,93 +7,23 @@ import {
   Text
 } from "react-native";
 import { USER } from "../Navigation/screenCases";
+import * as API from "../../services/api";
+import { AuthAPI } from "../../services/auth.api";
+import { NotificationApi } from "../../services/notification.api";
 
 export class AuthScreen extends React.Component {
   constructor(props) {
     super(props);
     this.unsubscribe = null;
     this.state = {
-      user: null,
-      phoneNumber: ""
+      phoneNumber: "",
+      isSend: false,
+      confirmCode: ""
     };
   }
   async componentDidMount() {
-    const NotificationOpen = await firebase
-      .notifications()
-      .getInitialNotification();
-    if (NotificationOpen) {
-      const action = NotificationOpen.action;
-      const Notification = NotificationOpen.notification;
-      var seen = [];
-      alert(
-        JSON.stringify(Notification.data, function(key, val) {
-          if (val != null && typeof val == "object") {
-            if (seen.indexOf(val) >= 0) {
-              return;
-            }
-            seen.push(val);
-          }
-          return val;
-        })
-      );
-    }
-    const channel = new firebase.notifications.Android.Channel(
-      "test-channel",
-      "Test Channel",
-      firebase.notifications.Android.Importance.Max
-    ).setDescription("My apps test channel");
-    // Create the channel
-    firebase.notifications().android.createChannel(channel);
-    this.notificationDisplayedListener = firebase
-      .notifications()
-      .onNotificationDisplayed(Notification => {
-        // Process your notification as required
-        // ANDROID: Remote notifications do not contain the channel ID. You will have to specify this manually if you'd like to re-display the notification.
-      });
-    this.notificationListener = firebase
-      .notifications()
-      .onNotification(Notification => {
-        // Process your notification as required
-        Notification.android
-          .setChannelId("test-channel")
-          .android.setSmallIcon("ic_launcher");
-        firebase.notifications().displayNotification(Notification);
-      });
-    this.notificationOpenedListener = firebase
-      .notifications()
-      .onNotificationOpened(NotificationOpen => {
-        // Get the action triggered by the notification being opened
-        const action = NotificationOpen.action;
-        // Get information about the notification that was opened
-        const Notification = NotificationOpen.notification;
-        var seen = [];
-        alert(
-          JSON.stringify(Notification.data, function(key, val) {
-            if (val != null && typeof val == "object") {
-              if (seen.indexOf(val) >= 0) {
-                return;
-              }
-              seen.push(val);
-            }
-            return val;
-          })
-        );
-        firebase
-          .notifications()
-          .removeDeliveredNotification(Notification.notificationId);
-      });
-
-    this.unsubscribe = firebase.auth().onAuthStateChanged(user => {
-      if (user) {
-        this.setState({ user: user.toJSON() });
-        this.props.navigation.navigate(USER, { ...user.toJSON() });
-      } else {
-        this.setState({
-          user: null,
-          phoneNumber: ""
-        });
-      }
-    });
+    this.notificationListener = this.startNotificationsListener();
+    this.unsubscribe = AuthAPI.userAuthListener(this._checkUser);
   }
   componentWillUnmount() {
     if (this.unsubscribe) this.unsubscribe();
@@ -102,41 +31,91 @@ export class AuthScreen extends React.Component {
     this.notificationListener();
     this.notificationOpenedListener();
   }
-
   render() {
     return (
       <View style={styles.container}>
         <TextInput
           style={styles.phoneInput}
-          onChangeText={number => this.setState({ phoneNumber: number })}
+          onChangeText={this.onPhoneNumberChange}
           value={this.state.phoneNumber}
         />
-        <TouchableHighlight style={styles.button} onPress={this._authByPhone}>
+        <TouchableHighlight
+          style={styles.button}
+          onPress={this._inputPhoneNumber}
+        >
           <Text style={styles.buttonText}>SIGN IN</Text>
         </TouchableHighlight>
+        {this.state.isSend ? (
+          <View>
+            <TextInput
+              style={styles.phoneInput}
+              onChangeText={this.onConfirmCodeChange}
+              value={this.state.confirmCode}
+            />
+            <TouchableHighlight
+              style={styles.button}
+              onPress={this._userConfirm}
+            >
+              <Text style={styles.buttonText}>CONFIRM</Text>
+            </TouchableHighlight>
+          </View>
+        ) : null}
       </View>
     );
   }
-  _authByPhone = async () => {
+  onPhoneNumberChange = number => {
+    this.setState({ phoneNumber: number });
+  };
+  onConfirmCodeChange = confirmCode => {
+    this.setState({ confirmCode });
+  };
+  // TODO: rename func, done
+  _checkUser = user => {
+    // TODO: get user in JSON format, done
+    if (user) {
+      const parsedUser = user.toJSON();
+      this.props.navigation.navigate(USER, { ...parsedUser });
+    } else {
+      this.setState({
+        phoneNumber: "",
+        isSend: false,
+        confirmCode: ""
+      });
+    }
+  };
+  startNotificationsListener = async () => {
+    await NotificationApi.notificationListener();
+  };
+  _inputPhoneNumber = async () => {
     try {
       const { phoneNumber: number } = this.state;
-      const result = await firebase.auth().signInWithPhoneNumber(number);
-      const code = "777777";
-      const user = await result.confirm(code);
-      console.log(user.toJSON());
-      this._createNotification(user.toJSON().phoneNumber);
+      AuthAPI.signInByPhone(number);
+      this.setState({
+        isSend: true
+      });
     } catch (e) {
       console.log(e);
     }
   };
+  _userConfirm = async () => {
+    const { confirmCode } = this.state;
+    // TODO: get only phoneNumber instead of whole user object, done!
+    const phoneNumber = await AuthAPI.userConfirm(confirmCode);
+    console.log(phoneNumber, "number");
+    this._createNotification(phoneNumber);
+    this.setState({
+      phoneNumber: "",
+      isSend: false,
+      confirmCode: ""
+    });
+  };
+
+  // TODO: move to service, done
   _createNotification = async phoneNumber => {
     try {
-      const httpsCallable = firebase.functions().httpsCallable("helloWorld");
-      const fcmToken = await firebase.messaging().getToken();
-      await httpsCallable({
-        token: fcmToken,
-        user: phoneNumber
-      });
+      const data = { user: phoneNumber };
+      const functionName = "helloWorld";
+      await API.callCloudFunctionWithData(functionName, data);
     } catch (e) {
       console.log(e);
     }

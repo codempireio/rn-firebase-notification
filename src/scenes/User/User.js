@@ -1,18 +1,11 @@
 import * as React from "react";
 import { View, Text, StyleSheet, TouchableHighlight } from "react-native";
 import firebase from "react-native-firebase";
+import * as API from '../../services/api';
 
 export class User extends React.Component {
-  async componentDidMount() {
-    try {
-      const data = await firebase
-        .database()
-        .ref("users/")
-        .once("value", data => console.log(data.val()));
-      debugger;
-    } catch (e) {
-      console.log(e);
-    }
+  componentDidMount() {
+    this.getUsers();
   }
   render() {
     return (
@@ -38,6 +31,10 @@ export class User extends React.Component {
       </View>
     );
   }
+  getUsers = async () => {
+    const data = await API.getUsers();
+    console.log(data);
+  };
   _signOut = () => {
     firebase.auth().signOut();
     this.props.navigation.goBack();
